@@ -64,17 +64,35 @@ It must be initialized with a `gpg2` key ID. Make sure your GPG key exists is in
 
 ## Development
 
-A credential helper can be any program that can read values from the standard input. We use the first argument in the command line to differentiate the kind of command to execute. There are four valid values: `store`, `get`, `erase`, `list`.
+A credential helper can be any program that can take command line arguments, read from the standard input and write to standard output. We use the first argument in the command line to differentiate the kind of command to execute. 
 
-- `store`: Adds credentials to the keychain. The payload in the standard input is a JSON document with keys `ServerURL`, `Username` and `Secret`. There is no standard output payload.
-- `get`: Retrieves credentials from the keychain. The payload in the standard input is the raw value for the `ServerURL`.
-- `erase`: Removes credentials from the keychain. The payload in the standard input is the raw value for the `ServerURL`.
-- `list`: Lists stored credentials. There is no standard input payload.
+### Commands
+There are four valid values for the command: `store`, `get`, `erase`, `list`.
 
-### Credential JSON document
-The Credentials JSON document is simply a JSON serialization of the [Credentials struct](credentials/credentials.go).
+- `store`: Adds credentials to the keychain. 
+  - stdin: a [Credentials JSON document](#Credentials_JSON_document)
+  - stdout: none
+- `get`: Retrieves credentials from the keychain.
+  - stdin: raw string value of the `ServerURL` field of the stored credentials
+  - stdout: a [Credentials JSON document](#Credentials_JSON_document)
+- `erase`: Removes credentials from the keychain.
+  - stdin: raw string value of the `ServerURL` field of the stored credentials
+  - stdout: none
+- `list`: Lists stored credentials. 
+  - stdin: none
+  - stdout: a JSON map where each key is a `ServerURL` and its value is the corresponding `Username`. NOTE: current implementations exhibit an irregularity where `ServerURL` **only** includes the protocol prefix (e.g. "https://") in the output of the `list` command.)
 
-Example: `{"ServerURL":"private-registry.example.com","Username":"alice","Secret":"mdpDMeQv8b"}`
+### Credentials JSON document
+The Credentials JSON document is simply a JSON serialization of the [Credentials struct](credentials/credentials.go). In other words, a JSON object with string-valued keys `ServerURL`, `Username` and `Secret`. NOTE: The value of `ServerURL` for current implementations is just a hostname with no protocol prefix, rather than a full "URL", as in the following example.
+
+Example: 
+```json
+{
+  "ServerURL":"private-registry.example.com",
+  "Username":"alice",
+  "Secret":"mdpDMeQv8b"
+}
+```
 
 ## Credentials libraries
 This repository also includes libraries to implement new credentials programs in Go. Adding a new helper program is pretty easy. You can see how the OS X keychain helper works in the [osxkeychain](osxkeychain) directory.
